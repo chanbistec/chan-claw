@@ -179,6 +179,80 @@
 
 ---
 
+## Sample Prompts for Agent Testing
+
+Use these to test if your agent works correctly:
+
+### General Prompts
+- "Help me with [task]"
+- "I need to [action]"
+- "What's the status of [item]?"
+- "Create a new [request]"
+- "Show me [information]"
+
+### Specific Examples
+
+| Scenario | User Says | Expected Response |
+|----------|-----------|------------------|
+| Leave Check | "How many leave days do I have?" | Bot shows leave balance |
+| IT Request | "I need help with my laptop" | Bot collects details, creates ticket |
+| Policy Question | "What are the remote work policies?" | Bot answers from knowledge base |
+| Meeting Book | "Book a meeting room for tomorrow" | Bot checks availability, books |
+| Expense Submit | "Submit my travel expense" | Bot collects receipt, starts claim |
+
+---
+
+## 10 Quick Agent Ideas (Pick One)
+
+1. **Lunch Ordering Bot** — Collect lunch orders, send to caterer
+2. **Timesheet Reminder** — Remind team to submit timesheets
+3. **Birthday Bot** — List upcoming team birthdays
+4. **Vendor Contact Finder** — Find contact info for suppliers
+5. **Training Request Bot** — Submit training requests to HR
+6. **Incident Reporter** — Log incidents with severity selection
+7. **Access Request Bot** — Request system access permissions
+8. **Daily Standup Collector** — Collect standup updates from team
+9. **Feedback Collector** — Gather feedback from customers/users
+10. **License Renewal Alert** — Notify before software licenses expire
+
+---
+
+## Example Agent Walkthrough: "IT Help Bot"
+
+### Triggers
+- "IT help"
+- "I have a technical issue"
+- "Report a problem"
+
+### Questions the Bot Asks
+1. "What category is this?" (Hardware / Software / Network / Access)
+2. "Describe the issue in a few words"
+3. "What's your priority?" (High / Medium / Low)
+4. "What floor/room are you in?"
+
+### Actions
+- Collect details into variables
+- Create SharePoint list item via Power Automate
+- Reply with ticket number and ETA
+
+### Fallback
+- "I didn't catch that. Say 'IT help' to start a new request."
+
+---
+
+## Bonus: Creative Agent Ideas
+
+| Idea | Target Audience | Why It's Useful |
+|------|-----------------|----------------|
+| **Sprint Retrospective Bot** | Agile Teams | Collect retro items, categorize, summarize |
+| **Client Onboarding Bot** | Sales/Success | Guide new clients through setup steps |
+| **Compliance Checklist Bot** | Finance/Legal | Walkthrough of compliance requirements |
+| **Daily Standup Bot** | Development Teams | Collect updates, post to Teams channel |
+| **Invoice Status Bot** | Finance/AP | Check invoice payment status |
+| **Training Completion Bot** | HR/L&D | Track course completion, send reminders |
+
+---
+
 **Add your own ideas below:**
 - _
 - _
