@@ -1,116 +1,76 @@
-# Copilot Studio — Underlying Infrastructure (Deep Analysis, Draft)
+# Copilot Studio — Underlying Infrastructure (Deep Analysis, Cited)
 
-> **Note:** This is a conceptual infrastructure analysis. I’ll refine and add citations once you provide official Microsoft docs or architecture references.
-
----
-
-## 1) Core Platform Layers
-
-### A) Copilot Studio Runtime
-- Orchestrates conversation flows (topics, AI prompts, triggers)
-- Manages session state and context
-- Routes between knowledge, tools, and actions
-
-### B) Power Platform Foundation
-- **Dataverse**: stores agent metadata, topics, variables, conversation logs
-- **Power Automate**: external action execution and workflow integration
-- **Connectors**: standard + custom connectors for system access
-
-### C) LLM / AI Layer
-- Responsible for generative responses and intent interpretation
-- Often powered by Microsoft-hosted models (e.g., Azure OpenAI)
-- Guardrails and filters applied before response delivery
+This analysis is grounded in Microsoft Learn architecture guidance and Copilot Studio capability documentation.
 
 ---
 
-## 2) Knowledge & Retrieval
-
-### A) Knowledge Sources
-- Internal documents (SharePoint, OneDrive)
-- Public web sources (if allowed)
-- ServiceNow KB and Dataverse tables
-
-### B) Retrieval / Grounding
-- Search pipelines (vector + keyword)
-- Answer synthesis from retrieved sources
-- Confidence scoring and fallback handling
+## 1) High‑level architecture (official view)
+Microsoft’s architecture overview shows Copilot Studio as a SaaS runtime that connects **client channels** (Teams, web, custom clients, etc.) to **runtime orchestration**, **integrations**, **dialog management**, **language understanding**, **generative answers**, **security**, **analytics**, and **Microsoft cloud services** such as Azure AI Search, Microsoft Graph, Azure Monitor, and Entra ID. The official diagram explicitly calls out layers for runtime, integrations, ALM, dialog management, language understanding, generative answers, security, triggers, and analytics. 
+Source: https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture-overview#create-a-conversational-ai-experience
 
 ---
 
-## 3) Channels & Delivery
-
-### A) Channels
-- Microsoft Teams
-- Web chat
-- Direct line / API endpoints
-- Voice channel via Teams Phone / ACS
-
-### B) Channel Adapters
-- Message formatting per channel
-- Authentication propagation
-- Rate limiting and retry logic
+## 2) Core capability domains
+Microsoft documents Copilot Studio’s core capability categories across **conversation design**, **orchestration**, **data connectivity**, **pro‑dev extensibility**, and **management/governance**. These map directly to the infrastructure building blocks (topics, actions, connectors, generative answers, telemetry, and compliance).
+Source: https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture-overview#copilot-studio-core-capabilities
 
 ---
 
-## 4) Identity, Auth, and Security
-
-- Azure AD / Entra ID authentication
-- Conditional access and role scoping
-- Token exchange for downstream systems
-- Audit logging + retention policies
+## 3) Runtime + orchestration
+Copilot Studio serves as the **central orchestration layer**, deciding intent, invoking topics/plugins, calling tools, and returning responses (documented in Microsoft’s Copilot architecture references).
+Source: https://learn.microsoft.com/en-us/dynamics365/fin-ops-core/dev-itpro/copilot/copilot-architecture#orchestration-with-copilot-studio
 
 ---
 
-## 5) Observability & Compliance
-
-- Conversation transcripts
-- Telemetry / diagnostics
-- Data residency considerations
-- DLP policies for sensitive data
+## 4) Generative answers + knowledge grounding
+The platform supports **generative answers** from internal/external sources and uses AI to craft conversational responses without creating topics for every query. This sits alongside curated topics for precision control.
+Source: https://learn.microsoft.com/en-us/power-platform/release-plan/2025wave1/microsoft-copilot-studio/#investment-areas
 
 ---
 
-## 6) Integration with ServiceNow
-
-### A) Integration Pathways
-- ServiceNow REST APIs
-- MID Server (on‑prem access)
-- ServiceNow Flow Designer integration
-
-### B) Common Patterns
-- Incident creation + updates
-- KB query + resolution notes
-- Approval workflows
+## 5) Integration surface
+Copilot Studio’s architecture calls out **integrations** including HTTP requests, connectors, workflows, AI Builder prompts, and Bot Framework skills — the key infrastructure for system actions and backend access.
+Source: https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture-overview#create-a-conversational-ai-experience
 
 ---
 
-## 7) Infrastructure Questions to Validate
-
-- What LLM stack is configured (Azure OpenAI or others)?
-- Where is data stored and processed (region)?
-- Which connectors are whitelisted?
-- How are logs retained and exported?
-- What is the escalation flow to humans?
+## 6) Analytics + observability
+The architecture explicitly includes **analytics** and **conversation transcripts**, along with telemetry signals. Guidance emphasizes monitoring and improving after deployment via built‑in insights and analytics.
+Source: https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture-overview
 
 ---
 
-## 8) Architecture Diagram (Conceptual)
-
-User (Teams/Web/Voice)
- → Copilot Studio Runtime
- → Knowledge/RAG Layer
- → Power Automate + Connectors
- → ServiceNow APIs
- → Observability + Logs
+## 7) Security + governance
+The architecture overview highlights **secret management, identity/authentication, authorization, endpoint security, data policies, and audit logs** as first‑class infrastructure layers.
+Source: https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture-overview#create-a-conversational-ai-experience
 
 ---
 
-## 9) What I Need to Finalize
+## 8) ALM + lifecycle
+Microsoft describes Copilot Studio as a **single SaaS experience** that supports build → publish → analyze → improve, and integrates with Power Platform solutions and CI/CD.
+Source: https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture-overview
 
-To create a **grounded, accurate** version, I need:
-- Official Copilot Studio architecture docs
-- Microsoft Power Platform environment docs
-- Azure OpenAI / LLM infra references
-- ServiceNow integration docs
+---
 
-Once you share those, I will upgrade this draft into a **citation‑backed** analysis.
+## 9) Channel and service ecosystem
+The official architecture diagram enumerates multiple client channels (Teams, web, custom clients, social channels) and Microsoft cloud services (Azure AI Search, Microsoft Graph, Azure Monitor, Entra ID). This shows Copilot Studio’s role as **middleware** between channels and enterprise services.
+Source: https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/architecture-overview#create-a-conversational-ai-experience
+
+---
+
+## 10) Practical infrastructure implications
+- **Teams‑first deployments** will primarily use Teams channel adapters, Entra ID auth, and Power Platform connectors.
+- **Enterprise integrations** rely on Power Automate + connectors or custom skills.
+- **Observability** can be extended via Azure Monitor / Application Insights when required.
+
+---
+
+## 11) Next steps for deeper validation
+- Validate data residency & compliance requirements per tenant.
+- Confirm which connectors are allowed in your environment.
+- Decide if generative orchestration should be enabled by default.
+- Map critical workflows to ALM pipelines.
+
+---
+
+If you want, I can extend this into a **visual architecture diagram** and **client‑ready deck**.
