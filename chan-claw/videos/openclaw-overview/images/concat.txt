@@ -1,0 +1,3 @@
+file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/openclaw-overview/images/slide-001.png'
+duration 6
+file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/openclaw-overview/images/slide-001.png'
