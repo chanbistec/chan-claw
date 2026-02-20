@@ -2,14 +2,20 @@
 
 ## OpenClaw Training Video
 
-- **File**: `openclaw-training.mp4`
-- **Duration**: 50 seconds
-- **Slides**: 10
-- **Resolution**: 1920x1080 (1080p)
-- **Branding**: ChanClaw dark theme with red accent (#e94560)
+**File**: `openclaw-training.mp4`  
+**Duration**: 60 seconds (10 slides, 6 sec/slide)  
+**Resolution**: 1920x1080 (1080p)  
+**Quality**: CRF 18 (high quality)  
+**Audio**: ElevenLabs TTS narration included
 
-### Slides
-1. 🔥 ChanClaw - AI-Powered Personal Assistant
+### Branding
+- **Theme**: Light (white background)
+- **Logo**: ChanClaw (top-left)
+- **Accent Color**: #e94560 (red)
+- **Font**: Arial (large, readable)
+
+### Slide Content
+1. ChanClaw - AI-Powered Personal Assistant
 2. What is OpenClaw?
 3. Core Capabilities
 4. How It Works
@@ -23,15 +29,16 @@
 ## Generate New Videos
 
 ```bash
-# Using train.js CLI
-~/.npm-global/bin/train.js topic "Your Topic" --output my-video.mp4 --theme gradient
-
-# Or use the dedicated OpenClaw video script
+# Dark theme (default)
 ~/.npm-global/bin/openclaw-video.js
+
+# Light theme
+~/.npm-global/bin/openclaw-video.js --light
 ```
 
-### Available Themes
-- dark
-- light
-- gradient (default)
-- corporate
+### Features
+- Large readable text (90px titles, 44px content)
+- No Unicode issues - uses system fonts
+- Professional slide layout with branding
+- Audio narration via ElevenLabs TTS
+- Both dark and light themes available
