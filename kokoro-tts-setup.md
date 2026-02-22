@@ -1,11 +1,39 @@
 # Kokoro TTS Setup
 
-## Overview
-Kokoro TTS is an open-source text-to-speech model with:
-- 82M parameters (lightweight, efficient)
-- Multiple voices: Bella, Sarah, Adam, etc.
-- Languages: English, French, Korean, Japanese, Mandarin
-- OpenAI-compatible API
+## Current Status: Using gTTS (Google TTS) as Fallback
+
+Since the server lacks sudo access for system audio libraries, we use **gTTS** (Google TTS) as a free fallback.
+
+### Installation (No sudo needed)
+```bash
+# Already installed
+~/.local/bin/gtts-cli --help
+```
+
+### Usage
+```bash
+# Basic
+~/.local/bin/gtts-cli "Hello world" -l en -o output.mp3
+
+# Or use the wrapper
+~/.npm-global/bin/kokoro-tts.js "Hello world" -o output.mp3 -l en
+```
+
+## Full Kokoro TTS Setup (Requires sudo)
+
+### Option 1: Hosted API
+Get API key from https://kokorottsai.com
+
+### Option 2: Local (needs sudo for PortAudio)
+```bash
+sudo apt install portaudio19-dev python3-pyaudio
+pip install kokoro-tts
+```
+
+### Option 3: Docker
+```bash
+docker run -p 8000:8000 ghcr.io/remsky/kokoro-onnx:latest
+```
 
 ## Website
 https://kokorottsai.com
@@ -13,42 +41,17 @@ https://kokorottsai.com
 ## Try Online
 https://webml-community-kokoro-web.static.hf.space
 
-## Installation Options
-
-### Option 1: Hugging Face Inference API
-```bash
-# Get token from https://huggingface.co/settings/tokens
-export HF_TOKEN="your_token_here"
-```
-
-### Option 2: Local Setup (requires Python)
-```bash
-# Install dependencies
-pip install kokoro-tts
-pip install sounddevice numpy
-
-# Download models
-python -c "from kokoro import KokoroTTS; KokoroTTS.download()"
-```
-
-### Option 3: Docker
-```bash
-docker run -p 8000:8000 kokoro-tts/server
-```
-
-## Usage (OpenAI-compatible)
+## Usage (OpenAI-compatible API)
 ```python
 import openai
-
 client = openai.OpenAI(
     base_url="https://api.kokorottsai.com/v1",
     api_key="your_api_key"
 )
-
 audio = client.audio.speech.create(
     model="kokoro",
     voice="bella",
-    input="Hello, this is Kokoro TTS!"
+    input="Hello!"
 )
 ```
 
@@ -60,18 +63,10 @@ audio = client.audio.speech.create(
 | adam | American English | Male |
 | george | British English | Male |
 | lily | British English | Female |
-| jane | French | Female |
-| max | German | Male |
-| yun | Korean | Male |
-| mei | Chinese | Female |
-| haruki | Japanese | Male |
 
-## Comparison with ElevenLabs
-| Feature | Kokoro TTS | ElevenLabs |
-|---------|------------|------------|
-| Cost | Free (open-source) | Paid |
-| Quality | High (82M params) | Very High |
-| Voices | 10+ | 100+ |
-| Languages | 5 | 29+ |
-| Local | Yes | No |
-| API | OpenAI-compatible | Custom |
+## Comparison
+| Feature | gTTS (current) | Kokoro TTS | ElevenLabs |
+|---------|---------------|------------|------------|
+| Cost | Free | Free/Open | Paid |
+| Quality | Basic | High | Very High |
+| No API key | ✅ | ❌ | ❌ |
