@@ -8,8 +8,3 @@ file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-age
 file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-008.mp3'
 file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-009.mp3'
 file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-010.mp3'
-file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-011.mp3'
-file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-012.mp3'
-file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-013.mp3'
-file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-014.mp3'
-file '/home/chanclaw/.openclaw/workspace/chan-claw/videos/2026-02-22-copilot-agent-evaluation/audio/slide-015.mp3'
