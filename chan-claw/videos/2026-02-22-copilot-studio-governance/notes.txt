@@ -1,0 +1,90 @@
+Slide 1: Copilot Studio Governance
+Narration: Welcome to Copilot Studio Governance. This is a practical guide for agent developers on implementing effective governance in Microsoft Copilot Studio and the Power Platform.
+
+Slide 2: Why Governance Matters
+Narration: Why does governance matter? Without proper governance, organizations face data leaks, compliance violations, and shadow IT. But done right, governance actually enables innovation while keeping your organization protected.
+
+Slide 3: The Full Lockdown Problem
+Narration: Here's the problem with full lockdown. When you block all app creation and restrict every connector, you push development underground. People start building in spreadsheets, email macros, and unsanctioned SaaS tools — where IT has absolutely zero visibility.
+
+Slide 4: Guardrails Over Gates
+Narration: Microsoft recommends guardrails over gates. Instead of blocking everything, implement environment strategy, data loss prevention policies, tenant isolation, managed environments, and deployment pipelines. Guide your makers, don't stop them.
+
+Slide 5: Copilot Studio Inherits Power Platform Governance
+Narration: Here's some good news. Copilot Studio shares the exact same architecture, security model, environment structure, and administration controls as Power Apps and Power Automate. So your existing governance applies directly.
+
+Slide 6: No Separate Framework Needed
+Narration: This means if you already have Power Platform governance in place, you don't need a separate framework. You can immediately apply those same controls, monitoring tools, and processes to Copilot Studio agents.
+
+Slide 7: Principle One - Environment Strategy
+Narration: Let's talk about the five key principles. Principle one is environment strategy. Create distinct environments that separate personal productivity, departmental development, testing areas, and production systems. Clear boundaries are essential.
+
+Slide 8: Environment Types
+Narration: There are several environment types to consider. Personal developer environments for experimentation, department or project environments for dev and test, and shared production environments with strict controls. Route makers to personal environments by default.
+
+Slide 9: Principle Two - Default Deny Exfiltration
+Narration: Principle two is default deny exfiltration. Your security should prevent unauthorized data movement by default, while enabling approved pathways through well-designed data loss prevention policies.
+
+Slide 10: DLP Policy Design
+Narration: For DLP policy design, categorize connectors into Business, Non-Business, and Blocked categories. Apply granular endpoint and action restrictions. Establish tenant isolation as a baseline, and use explicit allow-lists only for cross-tenant scenarios.
+
+Slide 11: Principle Three - Automate Change Management
+Narration: Principle three is automating change management. Standardize on Power Platform pipelines for application lifecycle management, with approval-based delegated deployments for all production changes.
+
+Slide 12: Pipeline Workflow
+Narration: In the pipeline workflow, all changes to production environments must undergo appropriate review. Configure pipelines with approval workflows while still enabling maker empowerment and development agility. It's about balance.
+
+Slide 13: Principle Four - Visibility and Iteration
+Narration: Principle four is visibility and iteration. Deploy the Center of Excellence Starter Kit for comprehensive asset inventory, metrics tracking, and automated governance workflows. You can't govern what you can't see.
+
+Slide 14: Monitoring Tools
+Narration: Your monitoring toolkit should include the Center of Excellence Starter Kit for asset inventory, Microsoft Purview for data access governance, and Microsoft Sentinel for audit logs and threat detection. Use these for continuous improvement based on actual usage patterns.
+
+Slide 15: Principle Five - Nurture the Maker Community
+Narration: Principle five is nurturing the maker community. Foster responsible innovation by publishing clear rules of engagement, offering regular training, and maintaining accessible support channels. Empowered makers are your best governance allies.
+
+Slide 16: Building Maker Culture
+Narration: When makers understand the why behind governance policies, they become active partners in maintaining security and compliance. They stop working around restrictions and start working within the guardrails you've built.
+
+Slide 17: IT Manager Responsibilities
+Narration: Now let's talk about roles. IT managers own the platform guardrails. They define environment topology, activate tenant isolation, design DLP policies, and enable managed environments for production.
+
+Slide 18: Environment Routing
+Narration: Use environment routing to automatically direct makers to their personal developer environment when they access Copilot Studio or Power Apps. This reduces the risk of accidental changes in production.
+
+Slide 19: Tenant Isolation
+Narration: Activate tenant isolation to prevent unauthorized cross-tenant data movement. Only create explicit allow-lists for legitimate business scenarios like subsidiaries or approved partnerships.
+
+Slide 20: Managed Environments
+Narration: Enable managed environments for all production environments. This gives you advanced monitoring, enhanced sharing controls, and deeper operational insights that you simply don't get with standard environments.
+
+Slide 21: Business Manager Responsibilities
+Narration: Business managers should position Power Platform as the official automation tool. Encourage prototyping in personal environments with structured promotion paths to production. Give people a clear route from idea to deployment.
+
+Slide 22: Outcome-Based Guardrails
+Narration: Implement outcome-based guardrails. Document approved data sources, permitted connectors, and appropriate publication channels. Establish a lightweight approval process for handling exceptions, so people don't get stuck.
+
+Slide 23: Transparency Requirements
+Narration: Transparency is non-negotiable. Every solution and agent must have a designated business owner, a purpose statement, appropriate data classification, and a defined lifecycle management plan.
+
+Slide 24: Securing the Default Environment
+Narration: The default environment needs special attention. Rename it to Personal Productivity, apply restrictive DLP policies, and block every blockable connector by default. This is your first line of defense.
+
+Slide 25: Default Environment DLP
+Narration: For the default environment DLP, move all non-blockable connectors to the Business category and set the default group to Blocked. This way, new connectors are automatically blocked without anyone having to intervene.
+
+Slide 26: Connector Governance
+Narration: Remember, connectors are the primary data egress vector in Power Platform. Your policies need to be precise enough to protect data without stalling legitimate development work. Precision matters more than restriction.
+
+Slide 27: Layered Security Model
+Narration: Build a layered security model. Start with tenant-level DLP policies for organization-wide rules, then add environment-level DLP for specific contexts, connector endpoint filtering for granular control, and action-level controls for specific operations.
+
+Slide 28: Agent Developer Best Practices
+Narration: For agent developers, always start in personal dev environments. Follow the promotion path from dev to test to production. And document your agents with clear purpose statements and data classification. Good documentation makes governance easier for everyone.
+
+Slide 29: Common Governance Mistakes
+Narration: Let's look at common governance mistakes. Over-restricting connectors causes shadow IT. Having no environment strategy leads to data mixing. Skipping monitoring means no visibility into risks. And ignoring the maker community creates resistance to your governance efforts.
+
+Slide 30: Summary and Next Steps
+Narration: To summarize, effective governance enables innovation while protecting data. Use environment strategy, DLP policies, managed environments, pipelines, and the Center of Excellence Kit to build a secure foundation. Start with these principles and iterate based on what you learn. Thank you for watching.
+
