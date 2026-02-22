@@ -1,0 +1,104 @@
+Slide 1: Copilot Studio Governance
+A practical guide for agent developers on implementing effective governance in Microsoft Copilot Studio and the Power Platform.
+
+Slide 2: Why Governance Matters
+Without proper governance, organizations face data leaks, compliance violations, and shadow IT. Governance enables innovation while protecting your organization.
+
+Slide 3: The Full Lockdown Problem
+Blocking all app creation and restricting connectors pushes development to spreadsheets, email macros, and unsanctioned SaaS tools where IT has zero visibility.
+
+Slide 4: Guardrails Over Gates
+Microsoft recommends guardrails over gates. Implement environment strategy, data loss prevention policies, tenant isolation, managed environments, and deployment pipelines.
+
+Slide 5: Copilot Studio Inherits Power Platform Governance
+Copilot Studio shares the same architecture, security model, environment structure, and administration controls as Power Apps and Power Automate.
+
+Slide 6: No Separate Framework Needed
+If you already have Power Platform governance in place, you can immediately apply those same controls, monitoring tools, and processes to Copilot Studio.
+
+Slide 7: Principle One - Environment Strategy
+Create distinct environments that separate personal productivity, departmental development, testing areas, and production systems.
+
+Slide 8: Environment Types
+- Personal developer environments for experimentation
+- Department or project dev and test environments
+- Shared production environments with strict controls
+- Route makers to personal environments by default
+
+Slide 9: Principle Two - Default Deny Exfiltration
+Implement security that prevents unauthorized data movement by default while enabling approved pathways through data loss prevention policies.
+
+Slide 10: DLP Policy Design
+- Categorize connectors into Business, Non-Business, and Blocked
+- Apply granular endpoint and action restrictions
+- Establish tenant isolation as a baseline control
+- Use explicit allow-lists for cross-tenant scenarios
+
+Slide 11: Principle Three - Automate Change Management
+Standardize on Power Platform pipelines for application lifecycle management with approval-based delegated deployments for all production changes.
+
+Slide 12: Pipeline Workflow
+All changes to production environments must undergo appropriate review. Configure pipelines with approval workflows while still enabling maker empowerment and development agility.
+
+Slide 13: Principle Four - Visibility and Iteration
+Deploy the Center of Excellence Starter Kit for comprehensive asset inventory, metrics tracking, and automated governance workflows.
+
+Slide 14: Monitoring Tools
+- Center of Excellence Starter Kit for asset inventory
+- Microsoft Purview for data access governance
+- Microsoft Sentinel for audit logs and threat detection
+- Continuous improvement based on actual usage patterns
+
+Slide 15: Principle Five - Nurture the Maker Community
+Foster responsible innovation by publishing clear rules of engagement, offering regular training, and maintaining accessible support channels.
+
+Slide 16: Building Maker Culture
+When makers understand the why behind governance policies, they become active partners in maintaining security and compliance rather than working around restrictions.
+
+Slide 17: IT Manager Responsibilities
+Own the platform guardrails. Define environment topology, activate tenant isolation, design DLP policies, and enable managed environments for production.
+
+Slide 18: Environment Routing
+Use environment routing to automatically direct makers to their personal developer environment when they access Copilot Studio or Power Apps.
+
+Slide 19: Tenant Isolation
+Activate tenant isolation to prevent unauthorized cross-tenant data movement. Create explicit allow-lists only for legitimate business scenarios like subsidiaries or partnerships.
+
+Slide 20: Managed Environments
+Enable managed environments for all production environments to gain advanced monitoring, enhanced sharing controls, and deeper operational insights.
+
+Slide 21: Business Manager Responsibilities
+Position Power Platform as the official automation tool. Encourage prototyping in personal environments with structured promotion paths to production.
+
+Slide 22: Outcome-Based Guardrails
+Document approved data sources, permitted connectors, and appropriate publication channels. Establish a lightweight approval process for handling exceptions.
+
+Slide 23: Transparency Requirements
+Every solution and agent must have a designated business owner, a purpose statement, appropriate data classification, and a defined lifecycle management plan.
+
+Slide 24: Securing the Default Environment
+Rename the default environment to Personal Productivity. Apply restrictive DLP policies. Block every blockable connector by default.
+
+Slide 25: Default Environment DLP
+Move all non-blockable connectors to Business category. Set the default group to Blocked so new connectors are automatically blocked without manual intervention.
+
+Slide 26: Connector Governance
+Connectors are the primary data egress vector. Use policies that are precise enough to protect data without stalling development work.
+
+Slide 27: Layered Security Model
+- Tenant-level DLP policies for organization-wide rules
+- Environment-level DLP for specific contexts
+- Connector endpoint filtering for granular control
+- Action-level controls for specific operations
+
+Slide 28: Agent Developer Best Practices
+Start in personal dev environments. Follow the promotion path from dev to test to production. Document your agents with clear purpose and data classification.
+
+Slide 29: Common Governance Mistakes
+- Over-restricting connectors causes shadow IT
+- No environment strategy leads to data mixing
+- Skipping monitoring means no visibility into risks
+- Ignoring maker community creates resistance
+
+Slide 30: Summary and Next Steps
+Effective governance enables innovation while protecting data. Use environment strategy, DLP policies, managed environments, pipelines, and the CoE Kit to build a secure foundation.
