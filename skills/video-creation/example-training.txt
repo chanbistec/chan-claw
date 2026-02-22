@@ -1,0 +1,68 @@
+# Training: Getting Started with Our Platform
+
+## Introduction
+Welcome to this training session on getting started with our platform.
+
+In this video, you'll learn everything you need to know to set up your account and start creating your first project.
+
+## What You'll Learn Today
+
+- How to create your first project
+- Basic configuration and settings
+- Best practices for success
+- Tips and tricks from experts
+
+## Step 1: Create Your Account
+
+Visit our website and click "Sign Up".
+
+Fill in your details:
+- Your name
+- Email address
+- A strong password
+
+Click the verification link sent to your email.
+
+## Step 2: Set Up Your Profile
+
+Once logged in, navigate to Settings.
+
+Add:
+- Profile photo
+- Bio description
+- Profile links
+
+This helps team members find and connect with you.
+
+## Step 3: Create Your First Project
+
+Click the "+ New Project" button.
+
+Choose a template:
+- Blank project
+- Starter template
+- Advanced template
+
+Give your project a name and description.
+
+## Best Practices
+
+1. Use descriptive names
+2. Add clear descriptions
+3. Organize with folders
+4. Invite team members early
+
+## Congratulations!
+
+You've completed the basics.
+
+Next steps:
+- Explore advanced features
+- Join our community
+- Check out more tutorials
+
+## Thank You!
+
+Thanks for watching this training.
+
+Subscribe for more tutorials!

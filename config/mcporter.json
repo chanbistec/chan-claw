@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "web-search": {
+      "command": "node /home/chanclaw/web-search-mcp/dist/index.js"
+    }
+  },
+  "imports": []
+}

@@ -1,0 +1,17 @@
+file 'video-images/slide-001.png'
+duration 5
+file 'video-images/slide-002.png'
+duration 5
+file 'video-images/slide-003.png'
+duration 5
+file 'video-images/slide-004.png'
+duration 5
+file 'video-images/slide-005.png'
+duration 5
+file 'video-images/slide-006.png'
+duration 5
+file 'video-images/slide-007.png'
+duration 5
+file 'video-images/slide-008.png'
+duration 5
+file 'video-images/slide-008.png'

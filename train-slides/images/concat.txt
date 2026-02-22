@@ -1,0 +1,7 @@
+file '/home/chanclaw/.openclaw/workspace/train-slides/images/slide-001.png'
+duration 5
+file '/home/chanclaw/.openclaw/workspace/train-slides/images/slide-002.png'
+duration 5
+file '/home/chanclaw/.openclaw/workspace/train-slides/images/slide-003.png'
+duration 5
+file '/home/chanclaw/.openclaw/workspace/train-slides/images/slide-003.png'
