@@ -1,0 +1,20 @@
+# OpenClaw workspace files (contain secrets/personal data)
+MEMORY.md
+TOOLS.md
+USER.md
+SOUL.md
+IDENTITY.md
+AGENTS.md
+HEARTBEAT.md
+BOOTSTRAP.md
+memory/
+
+# Credentials
+.env
+*.key
+*.pem
+credentials/
+
+# OS
+.DS_Store
+Thumbs.db
