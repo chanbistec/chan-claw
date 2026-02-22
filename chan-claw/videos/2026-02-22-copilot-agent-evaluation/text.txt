@@ -1,0 +1,55 @@
+Slide 1: Agent Evaluation in Microsoft Copilot Studio
+Introduction to automated agent testing and quality assurance.
+
+Slide 2: Why Agent Evaluation Matters
+As AI agents take on critical business roles, reliable testing becomes essential for maintaining quality and trust.
+
+Slide 3: What is Agent Evaluation?
+Agent evaluation generates tests that simulate real-world scenarios, covering more questions faster than manual testing.
+
+Slide 4: Key Benefits
+- Automated, structured testing
+- Catches problems early
+- Reduces risk of bad answers
+- Maintains quality as agents evolve
+
+Slide 5: What Agent Evaluation Measures
+- Accuracy of responses
+- Relevancy to user questions
+- Quality of answers
+- Based on information the agent accesses
+
+Slide 6: Test Cases Explained
+A test case is a single message or question simulating what a user would ask your agent.
+
+Slide 7: Example Test Case
+Question: What are your business hours?
+Expected Response: We are open from 9 a.m. to 5 p.m. Monday to Friday.
+
+Slide 8: Test Sets
+A test set is a group of test cases that allows you to run multiple evaluations at once.
+
+Slide 9: Test Set Capabilities
+- Run multiple test cases simultaneously
+- Analyze performance with aggregate scores
+- Zoom in on individual test cases
+- Compare performance changes over time
+
+Slide 10: Generating Test Sets
+You can generate test sets from knowledge or topics, import from files, or manually write test cases.
+
+Slide 11: User Profiles
+Choose a user profile to simulate different users sending questions. Agents may respond differently based on user context.
+
+Slide 12: Running Evaluations
+Copilot Studio sends questions, records responses, compares against expected answers, and assigns scores.
+
+Slide 13: Test Chat vs Agent Evaluation
+Test Chat: One question at a time, full conversation sessions.
+Agent Evaluation: Multiple test cases at once, repeatable tests, objective scoring.
+
+Slide 14: Important Limitations
+Agent evaluation measures correctness, not AI ethics or safety. Always use responsible AI reviews and content safety filters.
+
+Slide 15: Summary
+Agent evaluation provides automated, repeatable quality assurance for your Copilot Studio agents.
