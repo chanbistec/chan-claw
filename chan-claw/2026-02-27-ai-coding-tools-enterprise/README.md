@@ -1,275 +1,413 @@
-# AI Coding Tools for Enterprise — Research Guide
+# Claude Code for Enterprise — Organization-Wide Adoption Guide
 
 > **Date:** February 27, 2026  
 > **Author:** OpenClaw Research  
-> **Audience:** Enterprise architects, IT decision-makers, development leads
+> **Audience:** IT admins, engineering leads, enterprise architects
 
 ---
 
 ## Executive Summary
 
-The AI coding tool landscape has matured rapidly. Enterprises now have multiple production-ready options — from cloud-hosted coding agents to terminal CLIs to full IDE replacements. This guide covers the major players, their enterprise features, pricing, and recommendations.
+Claude Code is Anthropic's AI-powered coding assistant that works across terminal, VS Code, JetBrains, desktop, and web. This guide covers how to roll it out organization-wide — subscription plans, centralized management, skills as shared knowledge, security controls, and best practices.
 
 ---
 
-## 1. Claude Code (Anthropic)
+## 1. Choosing the Right Plan
 
-### What It Is
-An agentic coding assistant powered by Claude. Works across terminal CLI, VS Code, JetBrains, desktop app, and web browser. Can read/edit files, run commands, and work across entire codebases.
+### Individual Plans
 
-### Enterprise Features
-- **Multi-surface:** Terminal CLI, VS Code extension, JetBrains plugin, desktop app, web UI
-- **Agentic execution:** Reads files, runs tests, makes multi-file edits autonomously
-- **CLAUDE.md configuration:** Project-level instructions (like AGENTS.md for Codex)
-- **MCP integration:** Connect to custom tools and services
-- **CI/CD integration:** Can be embedded in GitHub Actions workflows
-- **Cloud sessions:** Run tasks in the cloud, check back later
-- **Third-party provider support:** Works with API keys from other providers
+| Plan | Price | Claude Code Access | Best For |
+|------|-------|--------------------|----------|
+| **Free** | $0 | Limited | Evaluation only |
+| **Pro** | $20/mo ($17 annual) | ✅ Included | Individual developers |
+| **Max 5x** | $100/mo | ✅ 5x Pro usage | Power users |
+| **Max 20x** | $200/mo | ✅ 20x Pro usage | Heavy daily use |
 
-### Pricing
-| Plan | Price | Notes |
-|------|-------|-------|
-| Claude Pro | $20/mo | Included with subscription |
-| Claude Max | $100/mo | 5x usage limits |
-| Claude Max (20x) | $200/mo | 20x usage limits |
-| API (Console) | Pay-per-token | For programmatic/CI usage |
+### Organization Plans
 
-### Strengths
-- Best-in-class code understanding and reasoning
-- Works in terminal (no IDE dependency)
-- Excellent multi-file refactoring
-- Strong at following project conventions
+| Plan | Price | Key Features |
+|------|-------|-------------|
+| **Team** | $25/seat/mo ($20 annual) | Central billing, SSO, domain capture, admin controls, enterprise search, mix-and-match seat types |
+| **Team Max** | $125/seat/mo ($100 annual) | Everything in Team + 5x usage per seat |
+| **Enterprise** | Custom pricing | Everything in Team + SCIM, audit logs, compliance API, HIPAA-ready, custom data retention, IP allowlisting, role-based access |
 
-### Weaknesses
-- Token-intensive for large codebases
-- Requires Anthropic subscription or API key
-- Relatively new compared to Copilot ecosystem
+### Recommendation
+
+- **5-150 people:** Team plan — gives you SSO, central billing, and admin controls
+- **150+ or regulated industry:** Enterprise — adds SCIM provisioning, audit logs, compliance API, and HIPAA readiness
+- **Mix seat types:** Assign Pro seats to occasional users, Max seats to power users — Team plan supports this
 
 ---
 
-## 2. OpenAI Codex (Cloud Agent)
+## 2. Skills as a Central Knowledge Repository
 
-### What It Is
-A cloud-based software engineering agent powered by codex-1 (optimized o3). Runs tasks in isolated cloud sandboxes preloaded with your repository. Available through ChatGPT sidebar.
+Skills are the killer feature for organization-wide adoption. They let you encode your team's knowledge, conventions, and workflows into reusable instructions that Claude follows automatically.
 
-### Enterprise Features
-- **Parallel task execution:** Run many tasks simultaneously
-- **Sandbox environments:** Each task gets its own isolated env with your repo
-- **AGENTS.md guidance:** Configure how Codex navigates your codebase
-- **PR creation:** Generates commits and can open GitHub PRs directly
-- **Verifiable outputs:** Citations of terminal logs and test outputs
-- **Internet access:** Can fetch dependencies and docs during execution
-- **Task takes 1-30 min** depending on complexity
+### What Skills Are
 
-### Pricing
-| Plan | Price | Notes |
-|------|-------|-------|
-| ChatGPT Plus | $20/mo | Limited Codex access |
-| ChatGPT Pro | $200/mo | Full access |
-| ChatGPT Business | $25/user/mo | Team features |
-| ChatGPT Enterprise | Custom | Full enterprise controls |
+A skill is a directory with a `SKILL.md` file containing instructions for Claude. When a task matches a skill's description, Claude loads and follows it automatically. Users can also invoke skills directly with `/skill-name`.
 
-### Also: Codex CLI (Open Source)
-- Terminal-based coding agent (separate from cloud Codex)
-- Open-source on GitHub
-- Uses OpenAI API directly (pay-per-token)
-- Supports `gpt-5.1-codex` and `gpt-5.2-codex` models
-- Lighter weight, runs locally
+```
+my-skill/
+├── SKILL.md          # Main instructions (required)
+├── template.md       # Templates for Claude to fill in
+├── examples/
+│   └── sample.md     # Example outputs
+└── scripts/
+    └── validate.sh   # Scripts Claude can execute
+```
 
-### Strengths
-- Cloud execution (no local compute needed)
-- Parallel task processing
-- Strong test-driven development loop
-- Good at following AGENTS.md instructions
+### Skill Scopes — Where to Put Them
 
-### Weaknesses
-- Slower feedback loop (1-30 min per task)
-- Requires ChatGPT subscription for cloud agent
-- Less interactive than IDE-based tools
+| Scope | Location | Who Uses It | Shared? |
+|-------|----------|-------------|---------|
+| **Enterprise** | Server-managed settings | All users in organization | ✅ Centrally deployed |
+| **Personal** | `~/.claude/skills/<name>/SKILL.md` | One developer, all projects | ❌ |
+| **Project** | `.claude/skills/<name>/SKILL.md` | All collaborators on repo | ✅ Via git |
+| **Plugin** | `<plugin>/skills/<name>/SKILL.md` | Where plugin is enabled | ✅ Distributable |
+
+### Enterprise Skill Strategy
+
+**1. Organization-wide skills (Enterprise scope)**
+Deploy via server-managed settings. These apply to everyone and can't be overridden.
+
+Examples:
+- **Code review standards** — enforce your org's review checklist
+- **Security patterns** — SQL injection prevention, input validation, auth patterns
+- **API conventions** — RESTful naming, error formats, pagination standards
+- **Documentation standards** — README templates, JSDoc/docstring requirements
+- **Deployment procedures** — CI/CD steps, environment configs
+
+**2. Team/project skills (Project scope — `.claude/skills/`)**
+Committed to git, shared with all collaborators automatically.
+
+Examples:
+- **Framework conventions** — React patterns, Django conventions
+- **Testing standards** — test file structure, mocking patterns
+- **Database migrations** — schema change procedures
+- **Feature flag usage** — how to implement and clean up flags
+
+**3. Plugins for cross-team sharing**
+Package skills as plugins for distribution across multiple projects and teams.
+
+```
+company-standards/
+├── .claude-plugin/
+│   └── plugin.json
+├── skills/
+│   ├── code-review/SKILL.md
+│   ├── api-design/SKILL.md
+│   └── security-check/SKILL.md
+└── hooks/
+    └── hooks.json
+```
+
+### Example: Organization-Wide API Skill
+
+```markdown
+# .claude/skills/api-conventions/SKILL.md
+---
+name: api-conventions
+description: API design patterns and conventions for all services
+---
+
+When writing API endpoints, follow these conventions:
+
+## Naming
+- Use kebab-case for URLs: `/user-profiles` not `/userProfiles`
+- Use plural nouns for collections: `/users` not `/user`
+- Nest sub-resources: `/users/{id}/orders`
+
+## Response Format
+Always return:
+```json
+{
+  "data": {},
+  "meta": { "requestId": "uuid", "timestamp": "iso8601" },
+  "errors": []
+}
+```
+
+## Error Handling
+- 400: Validation errors (include field-level details)
+- 401: Authentication required
+- 403: Insufficient permissions
+- 404: Resource not found
+- 429: Rate limited (include Retry-After header)
+- 500: Internal error (log details, return generic message)
+
+## Pagination
+Use cursor-based pagination for all list endpoints:
+- `?cursor=<token>&limit=25`
+- Return `nextCursor` in meta
+```
 
 ---
 
-## 3. GitHub Copilot
+## 3. Centralized Configuration & Management
 
-### What It Is
-The most widely adopted AI coding assistant. Integrated into VS Code, JetBrains, CLI, and GitHub.com. Now includes agent mode and coding agents that can autonomously create PRs.
+### Server-Managed Settings (Teams/Enterprise)
 
-### Enterprise Features
-- **Copilot Business:** $19/user/mo — centralized management, policy controls
-- **Copilot Enterprise:** $39/user/mo — codebase-aware, Bing search, doc indexing
-- **Agent mode:** Autonomous multi-step coding in IDE
-- **Coding agent:** Assign GitHub issues → Copilot creates PRs autonomously
-- **Code review (Bugbot):** AI-powered PR reviews
-- **MCP support:** Connect to custom tool servers
-- **Model choice:** GPT-5 mini, Claude, Gemini models available
-- **Copilot Spaces:** Shared knowledge bases for teams
-- **SAML/SCIM:** Enterprise identity management
-- **Audit logs:** Track AI usage across org
+Admins configure Claude Code centrally via the Claude.ai admin console. Settings are delivered to all users automatically — no MDM required.
 
-### Pricing
-| Plan | Price | Notes |
-|------|-------|-------|
-| Free | $0 | 50 premium requests/mo |
-| Pro | $10/mo | 300 premium requests/mo |
-| Pro+ | $39/mo | 1,500 premium requests/mo |
-| Business | $19/user/mo | Admin controls, policy management |
-| Enterprise | $39/user/mo | Full enterprise suite |
+**How it works:**
+1. Admin configures settings in Claude.ai admin console
+2. Claude Code fetches settings at startup + polls hourly
+3. Settings are cached locally for offline resilience
+4. Users cannot override managed settings
 
-### Strengths
-- Deepest GitHub integration (issues → PRs → reviews)
-- Largest ecosystem and adoption
-- Multi-model support (not locked to one provider)
-- Best for organizations already on GitHub
+**What you can manage:**
+- Permission rules (allow/deny specific tools and commands)
+- Environment variables
+- Hook configurations
+- Security policies
 
-### Weaknesses
-- Premium request limits can be restrictive
-- Enterprise pricing adds up at scale
-- Agent capabilities still catching up to Claude Code/Codex
+**Requirements:**
+- Claude for Teams or Enterprise plan
+- Claude Code v2.1.38+ (Teams) or v2.1.30+ (Enterprise)
 
----
+### Endpoint-Managed Settings (MDM/GPO)
 
-## 4. Cursor
+For organizations with device management:
 
-### What It Is
-An AI-native code editor (VS Code fork) with deep AI integration. Features agent mode, tab completions, and cloud agents.
+| Platform | Delivery |
+|----------|----------|
+| **macOS** | `com.anthropic.claudecode` managed preferences (Jamf, Kandji) |
+| **Windows** | `HKLM\SOFTWARE\Policies\ClaudeCode` registry key (Group Policy, Intune) |
+| **File-based** | `managed-settings.json` deployed to system paths |
 
-### Enterprise Features
-- **Agent mode (Cascade):** Multi-step autonomous coding
-- **Cloud agents:** Run tasks in the cloud
-- **Tab completions:** Context-aware autocomplete
-- **Bugbot:** AI code review add-on
-- **Teams plan:** Shared chats, usage analytics, RBAC, SAML/OIDC SSO
-- **Enterprise plan:** SCIM, audit logs, pooled usage, invoice billing
-- **Multi-model:** Supports OpenAI, Claude, Gemini models
+**Precedence:** Server-managed > Endpoint-managed > User > Project
 
-### Pricing
-| Plan | Price | Notes |
-|------|-------|-------|
-| Hobby | Free | Limited requests |
-| Pro | $20/mo | Extended limits, cloud agents |
-| Pro+ | $60/mo | 3x usage on all models |
-| Ultra | $200/mo | 20x usage, priority features |
-| Teams | $40/user/mo | SSO, analytics, shared rules |
-| Enterprise | Custom | SCIM, audit logs, pooled usage |
+### Settings Hierarchy
 
-### Strengths
-- Best-in-class IDE AI experience
-- Inline diffs and previews
-- Strong agentic capabilities
-- Good for frontend/full-stack work
-
-### Weaknesses
-- Must use Cursor editor (can't use in existing IDE)
-- Higher per-seat cost than Copilot
-- Smaller ecosystem than GitHub Copilot
+```
+Managed (highest — can't override)
+  ↓
+Command line arguments
+  ↓
+Local (.claude/settings.local.json)
+  ↓
+Project (.claude/settings.json)
+  ↓
+User (~/.claude/settings.json — lowest)
+```
 
 ---
 
-## 5. Windsurf (formerly Codeium)
+## 4. Security & Compliance Controls
 
-### What It Is
-AI-native editor with "Cascade" — an agentic AI that understands your full codebase. Claims 70M+ lines of code committed to production.
+### Enterprise Security Features
 
-### Enterprise Features
-- **Cascade agent:** Multi-step autonomous coding with deep codebase awareness
-- **Supercomplete:** Predicts next actions, not just code completions
-- **MCP support:** Connect to custom tools and services
-- **Linter integration:** Auto-fixes linter errors
-- **Tab to Jump:** Predicts cursor navigation
-- **In-line commands:** Natural language code generation
+| Feature | Team | Enterprise |
+|---------|------|-----------|
+| SSO (SAML/OIDC) | ✅ | ✅ |
+| Domain capture | ✅ | ✅ |
+| Central billing | ✅ | ✅ |
+| Admin controls for connectors | ✅ | ✅ |
+| Desktop app enterprise deployment | ✅ | ✅ |
+| No model training on content | ✅ Default | ✅ Default |
+| Role-based access (fine-grained) | ❌ | ✅ |
+| SCIM provisioning | ❌ | ✅ |
+| Audit logs | ❌ | ✅ |
+| Compliance API | ❌ | ✅ |
+| Custom data retention | ❌ | ✅ |
+| IP allowlisting | ❌ | ✅ |
+| HIPAA-ready | ❌ | ✅ Available |
 
-### Pricing
-| Plan | Price | Notes |
-|------|-------|-------|
-| Free | $0 | Limited features |
-| Pro | $15/mo | Full features |
-| Teams | Custom | Enterprise controls |
+### Permission Management
 
-### Strengths
-- Competitive pricing
-- Strong codebase understanding
-- Good for non-developers too (94% time saved on boilerplate)
+Use managed settings to control what Claude Code can do:
 
-### Weaknesses
-- Smaller user base than Copilot/Cursor
-- Less enterprise track record
-- Editor lock-in (separate from VS Code)
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Write(.claude/**)",
+      "Bash(npm test)",
+      "Bash(npm run lint)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl *)",
+      "Write(/etc/**)"
+    ]
+  }
+}
+```
 
----
+### Data Protection
 
-## 6. Other Notable Tools
-
-| Tool | Type | Key Feature | Enterprise Ready? |
-|------|------|-------------|-------------------|
-| **Amazon Q Developer** | IDE + CLI | AWS-native, Java/.NET modernization | ✅ Full |
-| **JetBrains AI** | IDE plugin | Deep JetBrains integration | ✅ Teams/Enterprise |
-| **Tabnine** | IDE plugin | On-premise deployment, private models | ✅ Strong |
-| **Sourcegraph Cody** | IDE + web | Codebase search + AI chat | ✅ Enterprise |
-| **Devin (Cognition)** | Autonomous agent | Full SWE agent, runs independently | ⚠️ Early |
-| **SWE-agent** | Open source | Research-grade coding agent | ❌ Research only |
-
----
-
-## Enterprise Decision Matrix
-
-| Criteria | Claude Code | Codex | Copilot | Cursor | Windsurf |
-|----------|------------|-------|---------|--------|----------|
-| **IDE integration** | VS Code, JetBrains | ChatGPT web | VS Code, JetBrains, Xcode | Own editor | Own editor |
-| **Terminal/CLI** | ✅ Strong | ✅ CLI available | ✅ Copilot CLI | ❌ | ❌ |
-| **Cloud agents** | ✅ | ✅ Core feature | ✅ Coding agent | ✅ | ❌ |
-| **GitHub integration** | Via MCP | PR creation | ✅ Native | Via extensions | Via extensions |
-| **SSO/SCIM** | Via API plans | Enterprise plan | ✅ Enterprise | ✅ Enterprise | Custom |
-| **Audit logs** | API logging | Enterprise | ✅ Enterprise | ✅ Enterprise | Custom |
-| **On-premise** | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Model flexibility** | Claude only | OpenAI only | Multi-model | Multi-model | Own models |
-| **Cost (per dev/mo)** | $20-200 | $20-200 | $10-39 | $20-200 | $15+ |
-| **Best for** | Complex reasoning | Parallel tasks | GitHub-centric teams | IDE-first devs | Cost-conscious |
+- **No training by default:** Team and Enterprise plans don't use your data for model training
+- **Custom retention:** Enterprise can set data retention policies
+- **Compliance API:** Monitor and audit Claude Code usage programmatically
+- **Audit logs:** Track who did what, when, and in which project
 
 ---
 
-## Recommendations by Use Case
+## 5. Rollout Best Practices
 
-### "We're a GitHub shop and want broad coverage"
-→ **GitHub Copilot Business/Enterprise** — native integration, multi-model, mature admin controls
+### Phase 1: Pilot (2-4 weeks)
 
-### "We need the smartest coding agent for complex tasks"
-→ **Claude Code** — best reasoning, terminal-first, excellent for architecture-level work
+1. **Select 5-10 champion developers** across different teams
+2. **Start with Team plan** (easy to upgrade later)
+3. **Create 3-5 starter skills:**
+   - Code review checklist
+   - Your API conventions
+   - Testing standards
+   - PR description template
+   - Common debugging workflow
+4. **Measure:**
+   - Time-to-PR (before vs after)
+   - Developer satisfaction (survey)
+   - Code review turnaround
+   - Skill usage patterns
 
-### "We want cloud-based parallel task execution"
-→ **OpenAI Codex** — assign multiple tasks, get PRs back, ideal for backlog processing
+### Phase 2: Team Expansion (4-8 weeks)
 
-### "Our developers want the best IDE experience"
-→ **Cursor Pro+** — best-in-class editor AI, inline diffs, agent mode
+1. **Roll out to full engineering org**
+2. **Set up server-managed settings** for security policies
+3. **Create a shared skills repository** (internal git repo or plugin)
+4. **Establish a "skills committee"** — 2-3 people who review and maintain org-wide skills
+5. **Enable SSO/domain capture** to control access
 
-### "Budget-conscious team wanting AI coding"
-→ **GitHub Copilot Free/Pro** or **Windsurf Free** — good starting points at low/no cost
+### Phase 3: Organization-Wide (ongoing)
 
-### "We need on-premise / air-gapped"
-→ **Tabnine Enterprise** — only major option with full on-premise deployment
+1. **Upgrade to Enterprise** if you need audit logs, SCIM, compliance
+2. **Build a skills catalog** — internal page listing all available skills
+3. **Automate onboarding** — new devs get Claude Code + org skills on day 1
+4. **Track ROI** via compliance API and usage analytics
+5. **Regular skill reviews** — quarterly review of skill effectiveness
+
+### Skills Governance
+
+| Role | Responsibility |
+|------|---------------|
+| **Skills Committee** (2-3 leads) | Review/approve org-wide skills, maintain quality |
+| **Team Leads** | Create and maintain team-specific project skills |
+| **Individual Devs** | Propose new skills, provide feedback, create personal skills |
+| **IT Admin** | Manage server settings, permissions, SSO, compliance |
 
 ---
 
-## Security & Compliance Considerations
+## 6. Skills Repository Pattern
 
-1. **Data retention:** Most tools process code in the cloud. Review each vendor's data retention and training policies
-2. **Code telemetry:** Ensure tools aren't sending proprietary code to train models (opt-out available on most enterprise plans)
-3. **SOC 2/ISO 27001:** Verify compliance certifications — Anthropic, OpenAI, GitHub all have SOC 2
-4. **IP indemnification:** GitHub Copilot Enterprise and some plans include IP indemnification for generated code
-5. **Access controls:** Enterprise plans typically include SSO, SCIM, and role-based access
-6. **Audit trails:** Critical for regulated industries — ensure AI tool usage is logged
+Create a central git repository for your organization's skills:
+
+```
+org-claude-skills/
+├── .claude-plugin/
+│   └── plugin.json
+├── skills/
+│   ├── code-review/
+│   │   ├── SKILL.md
+│   │   └── checklist.md
+│   ├── api-design/
+│   │   ├── SKILL.md
+│   │   └── examples/
+│   ├── security-check/
+│   │   ├── SKILL.md
+│   │   └── scripts/
+│   │       └── scan.sh
+│   ├── testing-standards/
+│   │   └── SKILL.md
+│   ├── pr-template/
+│   │   ├── SKILL.md
+│   │   └── template.md
+│   └── incident-response/
+│       └── SKILL.md
+├── agents/
+│   └── code-reviewer.md
+└── README.md
+```
+
+**Distribution options:**
+1. **As a plugin** — developers install via Claude Code plugin manager
+2. **Via git submodule** — add to each project's `.claude/` directory
+3. **Via managed settings** — enterprise-level deployment (no user action needed)
 
 ---
 
-## Getting Started Checklist
+## 7. MCP Servers for Enterprise Integration
 
-- [ ] Define your primary use case (code completion, agent tasks, code review)
-- [ ] Evaluate 2-3 tools with a pilot team (5-10 devs, 30 days)
-- [ ] Measure productivity impact (PRs merged, cycle time, developer satisfaction)
-- [ ] Review security/compliance requirements with InfoSec
-- [ ] Negotiate enterprise terms based on pilot results
-- [ ] Create internal guidelines for AI-assisted coding (review requirements, testing standards)
-- [ ] Roll out gradually with training and documentation
+Connect Claude Code to your internal tools via Model Context Protocol (MCP):
+
+| Integration | Purpose |
+|-------------|---------|
+| **Internal APIs** | Query internal services, databases |
+| **Jira/Linear** | Pull ticket context into coding sessions |
+| **Confluence/Notion** | Access documentation while coding |
+| **Datadog/Grafana** | Check logs and metrics during debugging |
+| **Slack** | Post updates from coding sessions |
+| **Custom tools** | Connect any internal tool with an API |
+
+MCP servers can be configured at project level (`.mcp.json`) or managed centrally.
 
 ---
 
-*Research compiled from official product pages and documentation as of February 2026.*
+## 8. Cost Optimization
+
+### Seat Type Strategy
+
+| Developer Profile | Recommended Seat | Monthly Cost |
+|------------------|------------------|-------------|
+| Occasional user (PM, designer) | Team Pro | $25/seat |
+| Regular developer | Team Pro | $25/seat |
+| Power user / lead | Team Max | $125/seat |
+| CI/CD automation | API (Console) | Pay-per-token |
+
+### Usage Monitoring
+
+- **Team plan:** Usage analytics dashboard shows per-user consumption
+- **Enterprise:** Compliance API for detailed usage tracking
+- **Set spend controls:** Organization and user-level limits available
+
+### Cost Example: 50-Person Engineering Team
+
+| Seat Mix | Count | Monthly Cost |
+|----------|-------|-------------|
+| Team Pro seats | 40 | $1,000 |
+| Team Max seats | 10 | $1,250 |
+| **Total** | **50** | **$2,250/mo** |
+
+Annual with discount: ~$20,400/year
+
+---
+
+## 9. Comparison with Alternatives
+
+| Feature | Claude Code (Team) | GitHub Copilot Business | Cursor Teams |
+|---------|-------------------|------------------------|--------------|
+| **Price/seat/mo** | $25 | $19 | $40 |
+| **CLI/Terminal** | ✅ Full | ✅ Limited | ❌ |
+| **IDE Support** | VS Code, JetBrains | VS Code, JetBrains, Xcode | Cursor only |
+| **Skills/Knowledge** | ✅ Skills system | Custom instructions | Rules |
+| **Cloud agents** | ✅ | ✅ Coding agent | ✅ |
+| **SSO** | ✅ | ✅ | ✅ |
+| **Audit logs** | Enterprise | Enterprise | Enterprise |
+| **Model quality** | Claude (best reasoning) | Multi-model | Multi-model |
+| **Org-wide deployment** | Server-managed settings | GitHub org settings | Admin console |
+
+**Why Claude Code for enterprise:**
+- **Skills system** is the most mature way to encode org knowledge
+- **Best reasoning quality** for complex architectural decisions
+- **Terminal-first** means it works in any environment (SSH, CI/CD, containers)
+- **Server-managed settings** for centralized control without MDM
+
+---
+
+## Quick Start Checklist
+
+- [ ] Sign up for Claude for Teams at claude.com
+- [ ] Enable SSO and domain capture
+- [ ] Install Claude Code on pilot machines: `curl -fsSL https://claude.ai/install.sh | bash`
+- [ ] Create 3 starter skills in a shared repo
+- [ ] Configure server-managed settings for security policies
+- [ ] Run 2-week pilot with champion developers
+- [ ] Measure results and expand
+- [ ] Build skills catalog and governance process
+- [ ] Evaluate Enterprise upgrade for compliance needs
+
+---
+
+*Research compiled from official Claude Code documentation and pricing pages as of February 2026.*
