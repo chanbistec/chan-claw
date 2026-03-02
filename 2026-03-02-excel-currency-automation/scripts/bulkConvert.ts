@@ -1,78 +1,108 @@
 /**
- * Office Script: bulkConvert
+ * bulkConvert.ts — Office Script
  *
- * Accepts a source currency, target currency, and array of amounts.
- * Sets the currency picker to source/target, waits for _FV, and
- * returns all converted amounts.
+ * Converts an array of amounts from one currency to another
+ * using the workbook's _FV exchange rate function.
  *
- * Workbook layout assumptions:
- *   - Currency picker: Sheet1!B2 (accepts "EUR/USD" style pair)
- *   - _FV rate result: Sheet1!C2
+ * Does NOT modify the expenses table — purely a conversion utility.
+ *
+ * Usage from Power Automate:
+ *   Parameters: {
+ *     "sourceCurrency": "USD",
+ *     "targetCurrency": "EUR",
+ *     "amounts": [100, 250.50, 75, 1000]
+ *   }
+ *   Returns: {
+ *     "sourceCurrency": "USD",
+ *     "targetCurrency": "EUR",
+ *     "rate": 0.92,
+ *     "convertedAmounts": [92.00, 230.46, 69.00, 920.00]
+ *   }
  */
-
-interface BulkConvertResult {
-  sourceCurrency: string;
-  targetCurrency: string;
-  rate: number;
-  conversions: {
-    original: number;
-    converted: number;
-  }[];
-  timestamp: string;
-}
 
 function main(
   workbook: ExcelScript.Workbook,
   sourceCurrency: string,
   targetCurrency: string,
-  amounts: string // JSON string array, e.g. "[100, 250, 50.75]"
+  amounts: number[]
 ): BulkConvertResult {
-  const amountList: number[] = JSON.parse(amounts);
-  const sheet = workbook.getWorksheet("Sheet1");
-  const pickerCell = sheet.getRange("B2");
-  const rateCell = sheet.getRange("C2");
+  // --- Configuration ---
+  const SETTINGS_SHEET = "Settings";
+  const CURRENCY_CELL = "B2";
+  const RATE_CELL = "B3";
 
-  // Set currency pair
-  const pair = `${sourceCurrency.toUpperCase()}/${targetCurrency.toUpperCase()}`;
-  pickerCell.setValue(pair);
+  if (!sourceCurrency || !targetCurrency) {
+    throw new Error("Both sourceCurrency and targetCurrency are required");
+  }
+  if (!amounts || amounts.length === 0) {
+    throw new Error("amounts array is required and must not be empty");
+  }
 
-  // Recalculate
+  const source = sourceCurrency.trim().toUpperCase();
+  const target = targetCurrency.trim().toUpperCase();
+
+  // Same currency — no conversion needed
+  if (source === target) {
+    return {
+      sourceCurrency: source,
+      targetCurrency: target,
+      rate: 1.0,
+      convertedAmounts: amounts.map((a) => Math.round(a * 100) / 100),
+    };
+  }
+
+  const settingsSheet = workbook.getWorksheet(SETTINGS_SHEET);
+  if (!settingsSheet) {
+    throw new Error(`Worksheet "${SETTINGS_SHEET}" not found`);
+  }
+
+  const pickerCell = settingsSheet.getRange(CURRENCY_CELL);
+  const rateCell = settingsSheet.getRange(RATE_CELL);
+
+  // Save original currency to restore later
+  const originalCurrency = pickerCell.getValue() as string;
+
+  // Set the target currency to get the conversion rate
+  pickerCell.setValue(target);
   workbook.getApplication().calculate(ExcelScript.CalculationType.fullRebuild);
-  const rate = waitForRate(rateCell, 10, 500);
+
+  let rate = rateCell.getValue() as number;
+
+  // Retry if rate is invalid
+  if (typeof rate !== "number" || isNaN(rate) || rate <= 0) {
+    workbook.getApplication().calculate(ExcelScript.CalculationType.full);
+    rate = rateCell.getValue() as number;
+  }
+
+  if (typeof rate !== "number" || isNaN(rate) || rate <= 0) {
+    // Restore original currency before throwing
+    pickerCell.setValue(originalCurrency);
+    workbook.getApplication().calculate(ExcelScript.CalculationType.full);
+    throw new Error(
+      `Could not get valid exchange rate for ${source}→${target}. Rate returned: ${rate}`
+    );
+  }
 
   // Convert all amounts
-  const conversions = amountList.map((amt) => ({
-    original: amt,
-    converted: Math.round(amt * rate * 100) / 100,
-  }));
+  const convertedAmounts = amounts.map((amount) =>
+    Math.round(amount * rate * 100) / 100
+  );
+
+  // Restore the original currency
+  pickerCell.setValue(originalCurrency);
+  workbook.getApplication().calculate(ExcelScript.CalculationType.full);
 
   return {
-    sourceCurrency: sourceCurrency.toUpperCase(),
-    targetCurrency: targetCurrency.toUpperCase(),
+    sourceCurrency: source,
+    targetCurrency: target,
     rate,
-    conversions,
-    timestamp: new Date().toISOString(),
+    convertedAmounts,
   };
 }
 
-function waitForRate(
-  cell: ExcelScript.Range,
-  maxAttempts: number,
-  delayMs: number
-): number {
-  for (let i = 0; i < maxAttempts; i++) {
-    const val = cell.getValue();
-    if (typeof val === "number" && val > 0) return val;
-
-    const start = Date.now();
-    while (Date.now() - start < delayMs) {
-      cell.getAddress();
-    }
-    cell.getWorksheet().getWorkbook().getApplication().calculate(
-      ExcelScript.CalculationType.full
-    );
-  }
-  const finalVal = cell.getValue();
-  if (typeof finalVal === "number") return finalVal;
-  throw new Error(`Rate cell did not resolve. Last value: ${finalVal}`);
+interface BulkConvertResult {
+  sourceCurrency: string;
+  targetCurrency: string;
+  rate: number;
+  convertedAmounts: number[];
 }

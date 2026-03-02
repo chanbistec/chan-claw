@@ -2,81 +2,99 @@
 
 ## Overview
 
-Power Automate orchestrates the Office Scripts, passing parameters and handling triggers. The **Excel Online (Business)** connector's "Run script" action executes scripts inside Excel Online's engine, where `_FV` connected data functions work.
-
-## Prerequisites
-
-- Microsoft 365 Business Standard/Premium (Office Scripts requires this)
-- Workbook stored in **OneDrive for Business** or **SharePoint**
-- Office Scripts saved in the workbook (Automate → New Script)
-- Power Automate license (included with M365)
+Power Automate connects your triggers (HTTP requests, schedules, Forms, etc.) to the Office Scripts running inside Excel Online. The **Excel Online (Business)** connector's **"Run script"** action executes your script within the Excel calculation engine — which is what makes `_FV` work.
 
 ---
 
-## Flow 1: Manual / Scheduled Expense Fill
+## Trigger Options
 
-### Trigger Options
+| Trigger | Use Case | Notes |
+|---------|----------|-------|
+| **Manual (Instant)** | Testing, ad-hoc runs | "Manually trigger a flow" — button in Power Automate or Teams |
+| **Scheduled (Recurrence)** | Daily expense sync | Set frequency, time zone, start time |
+| **HTTP Request** | External system integration | Generates a POST URL; call from .NET, cURL, CI/CD pipelines |
+| **When a new response is submitted (Forms)** | Employee expense submission | Reads form fields, passes to Office Script |
+| **When an item is created (SharePoint)** | New list item triggers conversion | Good for shared expense lists |
 
-| Trigger | Use Case |
-|---|---|
-| **Manual trigger** | On-demand with currency + expense JSON input |
-| **Recurrence** | Daily/weekly batch processing |
-| **When a file is modified** (OneDrive) | React to a CSV upload with new expenses |
-| **HTTP request** | Call from .NET or any external system |
+---
 
-### Step-by-Step Setup
+## Flow Architecture: Scheduled Daily Expense Fill
 
-#### 1. Create Flow
+This example pulls expenses from a SharePoint list every morning and fills the Excel workbook.
+
+### Step-by-Step Configuration
+
+#### Step 1: Create the Flow
 
 1. Go to [make.powerautomate.com](https://make.powerautomate.com)
-2. **Create → Instant cloud flow** (or Automated/Scheduled)
-3. Choose **Manually trigger a flow**
+2. Click **+ Create** → **Scheduled cloud flow**
+3. Set:
+   - Name: `Daily Expense Fill`
+   - Start: tomorrow at 07:00
+   - Repeat every: 1 Day
+4. Click **Create**
 
-#### 2. Add Manual Trigger Inputs
+#### Step 2: Get SharePoint Items
 
-Add these inputs to the manual trigger:
+1. Add action: **SharePoint → Get items**
+2. Configure:
+   - **Site Address**: `https://yourtenant.sharepoint.com/sites/finance`
+   - **List Name**: `Pending Expenses`
+   - **Filter Query**: `Status eq 'Pending'`
+   - **Top Count**: 100
 
-- **targetCurrency** (Text) — e.g. `EUR`
-- **expenses** (Text) — JSON string:
-  ```json
-  [
-    {"description": "Hotel", "amount": 200, "currency": "USD"},
-    {"description": "Taxi", "amount": 50, "currency": "GBP"}
-  ]
-  ```
+> 📸 *The "Get items" action shows dropdowns for Site Address and List Name. The Filter Query is an OData expression.*
 
-#### 3. Run Office Script
+#### Step 3: Build the Expenses Array
+
+1. Add action: **Data Operations → Select**
+2. Configure:
+   - **From**: `value` (dynamic content from Get items)
+   - **Map**:
+     - `description` → `Title` (from SharePoint)
+     - `amount` → `Amount` (from SharePoint)
+     - `currency` → `Currency` (from SharePoint)
+
+This transforms the SharePoint list items into the format our Office Script expects.
+
+#### Step 4: Run the Office Script
 
 1. Add action: **Excel Online (Business) → Run script**
 2. Configure:
    - **Location**: OneDrive for Business (or SharePoint site)
-   - **Document Library**: OneDrive / Documents
-   - **File**: Browse to your workbook
-   - **Script**: `fillExpenses`
-   - **targetCurrency**: `triggerBody()?['text']` (from trigger input)
-   - **expenses**: `triggerBody()?['text_1']` (the JSON string)
+   - **Document Library**: Documents
+   - **File**: `/Finance/ExpenseTracker.xlsx` (browse to your file)
+   - **Script**: `fillExpenses` (select from dropdown)
+   - **expenses** (parameter): `Output` from the Select step
+   - **baseCurrency** (parameter): `USD`
 
-#### 4. Parse Results (Optional)
+> 📸 *The "Run script" action shows a file picker and a dropdown of available scripts. Parameters appear as input fields below the script name.*
 
-Add **Parse JSON** after the script action:
+> ⚠️ **Important**: The script parameter must be valid JSON. The Select action's output is already a JSON array, so it maps directly.
 
-Schema:
+#### Step 5: Handle the Response
+
+The script returns a JSON object. Parse it:
+
+1. Add action: **Data Operations → Parse JSON**
+2. Schema:
 ```json
 {
   "type": "object",
   "properties": {
-    "totalRows": {"type": "integer"},
-    "currencies": {"type": "array", "items": {"type": "string"}},
-    "entries": {
+    "filled": { "type": "integer" },
+    "baseCurrency": { "type": "string" },
+    "summary": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "description": {"type": "string"},
-          "amount": {"type": "number"},
-          "currency": {"type": "string"},
-          "rate": {"type": "number"},
-          "convertedAmount": {"type": "number"}
+          "row": { "type": "integer" },
+          "description": { "type": "string" },
+          "originalAmount": { "type": "number" },
+          "currency": { "type": "string" },
+          "convertedAmount": { "type": "number" },
+          "status": { "type": "string" }
         }
       }
     }
@@ -84,90 +102,79 @@ Schema:
 }
 ```
 
-#### 5. Notification (Optional)
+#### Step 6: Error Handling
 
-Add **Send an email (V2)** or **Post message in Teams** with a summary.
+1. After the "Run script" action, click **...** → **Configure run after**
+2. Check **has failed** and **has timed out**
+3. Add a parallel branch for error handling:
+
+```
+Run script
+  ├── [Success] → Parse JSON → Update SharePoint items to "Processed"
+  └── [Failure] → Send email notification → Log to error list
+```
+
+For the error notification:
+1. Add action: **Office 365 Outlook → Send an email (V2)**
+2. To: `finance-team@company.com`
+3. Subject: `⚠️ Expense sync failed`
+4. Body: Include the error message from `Run script` outputs
+
+#### Step 7: Mark SharePoint Items as Processed
+
+1. Add action: **Apply to each** (loop over original SharePoint items)
+2. Inside: **SharePoint → Update item**
+   - Set `Status` to `Processed`
+   - Set `ProcessedDate` to `utcNow()`
 
 ---
 
-## Flow 2: Bulk Convert via HTTP (API Endpoint)
+## Flow: HTTP-Triggered Currency Conversion
 
-For calling from .NET or external systems.
+For calling from external systems (.NET, CI/CD, etc.):
 
-### Steps
+### Setup
 
-1. **Trigger**: When an HTTP request is received
-   - Method: POST
-   - Body JSON schema:
-     ```json
-     {
-       "type": "object",
-       "properties": {
-         "sourceCurrency": {"type": "string"},
-         "targetCurrency": {"type": "string"},
-         "amounts": {"type": "array", "items": {"type": "number"}}
-       }
-     }
-     ```
+1. **Create** → **Instant cloud flow** → trigger: **When an HTTP request is received**
+2. Set the Request Body JSON Schema:
 
-2. **Compose**: Create amounts string
-   - Expression: `string(triggerBody()?['amounts'])`
+```json
+{
+  "type": "object",
+  "properties": {
+    "sourceCurrency": { "type": "string" },
+    "targetCurrency": { "type": "string" },
+    "amounts": {
+      "type": "array",
+      "items": { "type": "number" }
+    }
+  },
+  "required": ["sourceCurrency", "targetCurrency", "amounts"]
+}
+```
 
-3. **Run script**: Excel Online → Run script
-   - Script: `bulkConvert`
-   - sourceCurrency: `triggerBody()?['sourceCurrency']`
-   - targetCurrency: `triggerBody()?['targetCurrency']`
-   - amounts: Output of Compose step
+3. Add **Excel Online (Business) → Run script** with `bulkConvert`
+4. Map parameters from the HTTP trigger body
+5. Add **Response** action to return the script result
 
-4. **Response**: Return script output as HTTP 200 JSON
+### Calling the Flow
 
-### Calling from .NET
-
-```csharp
-var client = new HttpClient();
-var payload = new {
-    sourceCurrency = "USD",
-    targetCurrency = "EUR",
-    amounts = new[] { 100.0, 250.0, 50.75 }
-};
-var response = await client.PostAsJsonAsync(
-    "https://prod-XX.westeurope.logic.azure.com:443/workflows/...",
-    payload
-);
-var result = await response.Content.ReadAsStringAsync();
+```bash
+curl -X POST "https://prod-XX.westus.logic.azure.com:443/workflows/..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceCurrency": "USD",
+    "targetCurrency": "EUR",
+    "amounts": [100, 250, 500]
+  }'
 ```
 
 ---
 
-## Error Handling
+## Tips & Gotchas
 
-### In the Flow
-
-- Wrap "Run script" in a **Scope** block
-- Add a parallel branch **Configure run after → has failed**
-- In the failure branch: send alert email / log to SharePoint list
-
-### Common Errors
-
-| Error | Cause | Fix |
-|---|---|---|
-| Script timeout (120s) | Too many currencies / large batch | Split into smaller batches |
-| File locked | Someone has the workbook open in desktop Excel | Use Excel Online only, or retry with delay |
-| Script not found | Script not saved to workbook | Re-save via Automate tab in Excel Online |
-| `_FV` returns error | Invalid currency code or service down | Validate inputs before calling script |
-
-### Retry Pattern
-
-Add a **Do until** loop around the script action with:
-- Condition: `outputs('Run_script')?['statusCode']` equals 200
-- Max count: 3
-- Add a **Delay** of 10 seconds between retries
-
----
-
-## Concurrency
-
-⚠️ Only **one script can run per workbook at a time**. If you need parallel processing:
-
-1. Use **Concurrency control = 1** on your flow (Settings → Concurrency Control → On → Degree = 1)
-2. Or split data across multiple workbooks
+- **Timeout**: Office Scripts have a **120-second** execution limit. For large datasets, batch your expenses.
+- **Concurrency**: Power Automate may run multiple flow instances. Set **Concurrency Control** on the trigger to `1` to avoid race conditions on the currency picker cell.
+- **Rate limits**: Excel Online connector has a limit of ~600 calls per connection per minute. For bulk operations, use a single `fillExpenses` call instead of looping `setCurrency`.
+- **File locking**: If someone has the workbook open in desktop Excel, the script may fail. Use `Configure run after → has failed` with a retry pattern.
+- **Testing**: Use the **Test** button (top-right of flow editor) → **Manually** to test with sample data before enabling the schedule.

@@ -1,177 +1,157 @@
 # .NET Alternative: Graph API + External Exchange Rate API
 
-## Why This Exists
+## When to Use This
 
-If you can't use Office Scripts + Power Automate (e.g., no M365 Business license, need tighter .NET integration, or want to avoid Power Automate costs at scale), this approach bypasses `_FV` entirely by fetching exchange rates from an external API.
-
-## Tradeoffs
-
-| Aspect | Office Scripts + Power Automate | .NET + External API |
-|---|---|---|
-| Uses workbook's `_FV` rates | ✅ Yes — same rates as manual use | ❌ No — rates may differ slightly |
-| Requires M365 Business | ✅ Yes | ❌ No (any Graph API access) |
-| Rate source | Microsoft's connected data | Your chosen API (may need paid plan) |
-| Latency | ~5-15s per currency (recalc wait) | ~200ms per API call |
-| Offline/batch capable | ❌ Needs Excel Online running | ✅ Fully independent |
-| Complexity | Low (no-code flow + scripts) | Medium (C# code, auth, API keys) |
+Use this approach when:
+- You **don't have** an M365 Business license (no Office Scripts)
+- You need the conversion logic **outside** of Excel
+- You want to run in a background service / Azure Function without Power Automate
+- You don't need to preserve the `_FV` formula — you just need correct rates
 
 ## Architecture
 
+Instead of relying on Excel's `_FV` connected data function, fetch exchange rates from a free API and write converted values directly via Microsoft Graph.
+
 ```
-.NET App
-  → Call exchange rate API (e.g., exchangerate-api.com, Open Exchange Rates)
-  → Calculate conversions in code
-  → Write results to Excel via Microsoft Graph API
-```
-
-## Sample Code
-
-### 1. Install Packages
-
-```bash
-dotnet add package Microsoft.Graph
-dotnet add package Azure.Identity
+┌─────────────┐     ┌────────────────────┐     ┌──────────────────┐
+│ .NET App /   │────▶│ Exchange Rate API   │     │ Microsoft Graph  │
+│ Azure Func   │     │ (frankfurter.app)   │     │ (write cells)    │
+│              │     └────────────────────┘     │                  │
+│              │─────────────────────────────────▶│ Excel Workbook   │
+└─────────────┘                                  └──────────────────┘
 ```
 
-### 2. Exchange Rate Service
+## Sample C# Code
 
 ```csharp
-using System.Net.Http.Json;
-
-public class ExchangeRateService
-{
-    private readonly HttpClient _http;
-    private readonly string _apiKey;
-
-    public ExchangeRateService(HttpClient http, string apiKey)
-    {
-        _http = http;
-        _apiKey = apiKey;
-    }
-
-    public async Task<decimal> GetRateAsync(string from, string to)
-    {
-        // Using exchangerate-api.com (free tier: 1500 req/month)
-        var url = $"https://v6.exchangerate-api.com/v6/{_apiKey}/pair/{from}/{to}";
-        var result = await _http.GetFromJsonAsync<ExchangeResponse>(url);
-        return result?.ConversionRate ?? throw new Exception($"No rate for {from}/{to}");
-    }
-}
-
-public record ExchangeResponse(
-    string Result,
-    decimal ConversionRate
-);
-```
-
-### 3. Write to Excel via Graph API
-
-```csharp
-using Azure.Identity;
 using Microsoft.Graph;
+using System.Text.Json;
 
-public class ExpenseWriter
+public class CurrencyExpenseService
 {
-    private readonly GraphServiceClient _graph;
-    private readonly ExchangeRateService _rates;
+    private readonly GraphServiceClient _graphClient;
+    private readonly HttpClient _httpClient;
 
-    public ExpenseWriter(ExchangeRateService rates, string tenantId, string clientId, string clientSecret)
+    // Workbook identifiers
+    private const string DriveItemId = "YOUR_DRIVE_ITEM_ID"; // or use path-based addressing
+    private const string WorksheetName = "Expenses";
+
+    public CurrencyExpenseService(GraphServiceClient graphClient, HttpClient httpClient)
     {
-        var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-        _graph = new GraphServiceClient(credential);
-        _rates = rates;
+        _graphClient = graphClient;
+        _httpClient = httpClient;
     }
 
-    public async Task FillExpensesAsync(
-        string userId,
-        string driveItemId,
-        string targetCurrency,
-        List<ExpenseEntry> expenses)
+    /// <summary>
+    /// Get exchange rate from frankfurter.app (free, no API key needed, ECB data).
+    /// </summary>
+    public async Task<decimal> GetExchangeRateAsync(string from, string to)
     {
-        // Group by currency to minimize API calls
-        var grouped = expenses.GroupBy(e => e.Currency.ToUpper());
+        var url = $"https://api.frankfurter.app/latest?from={from}&to={to}";
+        var response = await _httpClient.GetStringAsync(url);
+        var data = JsonDocument.Parse(response);
+        return data.RootElement
+            .GetProperty("rates")
+            .GetProperty(to)
+            .GetDecimal();
+    }
+
+    /// <summary>
+    /// Write expenses with converted amounts directly to Excel via Graph API.
+    /// </summary>
+    public async Task FillExpensesAsync(
+        List<ExpenseEntry> expenses,
+        string baseCurrency = "USD")
+    {
+        // Get unique currencies and fetch all rates in one batch
+        var currencies = expenses.Select(e => e.Currency).Distinct().ToList();
         var rates = new Dictionary<string, decimal>();
 
-        foreach (var group in grouped)
+        foreach (var currency in currencies)
         {
-            rates[group.Key] = await _rates.GetRateAsync(group.Key, targetCurrency);
-        }
-
-        // Build rows for the table
-        var rows = expenses.Select(e => new
-        {
-            values = new object[][]
+            if (currency == baseCurrency)
             {
-                new object[]
-                {
-                    e.Description,
-                    e.Amount,
-                    e.Currency,
-                    Math.Round(e.Amount * rates[e.Currency.ToUpper()], 2)
-                }
+                rates[currency] = 1m;
+                continue;
             }
-        });
-
-        // Add rows to the Expenses table
-        foreach (var row in rows)
-        {
-            await _graph.Users[userId]
-                .Drive.Items[driveItemId]
-                .Workbook.Tables["Expenses"]
-                .Rows
-                .PostAsync(new Microsoft.Graph.Models.WorkbookTableRow
-                {
-                    Values = new UntypedArray(
-                        row.values[0].Select(v => v switch
-                        {
-                            string s => new UntypedString(s),
-                            decimal d => new UntypedDouble((double)d),
-                            double d => new UntypedDouble(d),
-                            _ => new UntypedString(v?.ToString() ?? "")
-                        }).ToList<UntypedNode>())
-                });
+            rates[currency] = await GetExchangeRateAsync(currency, baseCurrency);
         }
+
+        // Build the values array for Graph API
+        // Each row: [Description, Amount, Currency, ConvertedAmount]
+        var values = expenses.Select(e => new object[]
+        {
+            e.Description,
+            e.Amount,
+            e.Currency,
+            Math.Round(e.Amount * rates[e.Currency], 2)
+        }).ToArray();
+
+        // Write to Excel via Graph API
+        // Range: starting from A2 (after header row)
+        var endRow = expenses.Count + 1;
+        var rangeAddress = $"A2:D{endRow}";
+
+        await _graphClient
+            .Me.Drive.Items[DriveItemId]
+            .Workbook.Worksheets[WorksheetName]
+            .Range(rangeAddress)
+            .Request()
+            .PatchAsync(new WorkbookRange
+            {
+                Values = JsonDocument.Parse(
+                    JsonSerializer.Serialize(values)).RootElement
+            });
     }
 }
 
 public record ExpenseEntry(string Description, decimal Amount, string Currency);
+
+// --- Usage ---
+// var service = new CurrencyExpenseService(graphClient, httpClient);
+// var expenses = new List<ExpenseEntry>
+// {
+//     new("Hotel", 150m, "EUR"),
+//     new("Taxi", 45m, "GBP"),
+//     new("Lunch", 2500m, "JPY"),
+// };
+// await service.FillExpensesAsync(expenses, "USD");
 ```
 
-### 4. Usage
+## Free Exchange Rate APIs
+
+| API | Key Required | Base Data | Rate Limit | URL |
+|-----|:---:|-----------|------------|-----|
+| **frankfurter.app** | No | ECB (European Central Bank) | Unlimited (fair use) | `api.frankfurter.app/latest?from=USD&to=EUR` |
+| **exchangerate-api.com** | Free tier | Multiple sources | 1,500/mo free | `open.er-api.com/v6/latest/USD` |
+| **Fixer.io** | Free tier | ECB | 100/mo free | `data.fixer.io/api/latest?access_key=KEY` |
+
+## Tradeoffs vs Office Scripts
+
+| Factor | Office Scripts + Power Automate | .NET + Graph API + External API |
+|--------|:---:|:---:|
+| Uses Excel's `_FV` rates | ✅ | ❌ (own rates) |
+| Preserves workbook formulas | ✅ | ❌ (overwrites with values) |
+| Requires M365 Business license | ✅ | ❌ |
+| Runs outside Excel | ❌ | ✅ |
+| Rate source control | Microsoft's data | You choose |
+| Speed for bulk operations | Slower (recalc per currency) | Faster (API + batch write) |
+| Works with desktop Excel formulas | ✅ | Partial (values only) |
+| CI/CD integration | Via HTTP trigger | Native |
+| Offline capable | ❌ | ✅ (with cached rates) |
+
+## Graph API Authentication Setup
+
+For an Azure Function or background service, use **app-only** authentication:
+
+1. Register an app in Azure AD (Entra ID)
+2. Grant `Files.ReadWrite.All` application permission
+3. Admin consent the permission
+4. Use client credentials flow:
 
 ```csharp
-var http = new HttpClient();
-var rates = new ExchangeRateService(http, "YOUR_API_KEY");
-var writer = new ExpenseWriter(rates, "TENANT_ID", "CLIENT_ID", "CLIENT_SECRET");
-
-var expenses = new List<ExpenseEntry>
-{
-    new("Hotel", 200m, "USD"),
-    new("Taxi", 50m, "GBP"),
-    new("Dinner", 75m, "EUR"),
-};
-
-await writer.FillExpensesAsync(
-    userId: "user@contoso.com",
-    driveItemId: "DRIVE_ITEM_ID",
-    targetCurrency: "EUR",
-    expenses: expenses
-);
+var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+var graphClient = new GraphServiceClient(credential);
 ```
 
-## Exchange Rate API Options
-
-| Provider | Free Tier | Notes |
-|---|---|---|
-| [exchangerate-api.com](https://www.exchangerate-api.com/) | 1,500 req/month | Simple, reliable |
-| [Open Exchange Rates](https://openexchangerates.org/) | 1,000 req/month | USD base only on free |
-| [Fixer.io](https://fixer.io/) | 100 req/month | EUR base only on free |
-| [ECB Reference Rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/) | Unlimited | Free, daily updates only, EUR base |
-
-## When to Choose This
-
-- You need sub-second conversions (no waiting for `_FV` recalc)
-- You're already in a .NET codebase and want to avoid Power Automate
-- You don't have M365 Business licenses
-- You need audit-trail control over which rate source is used
-- You're processing thousands of rows (Office Scripts has a 120s timeout)
+For user-delegated scenarios (interactive), use `InteractiveBrowserCredential` or `DeviceCodeCredential`.

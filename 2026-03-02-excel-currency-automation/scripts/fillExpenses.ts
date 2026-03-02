@@ -1,15 +1,170 @@
 /**
- * Office Script: fillExpenses
+ * fillExpenses.ts — Office Script
  *
- * Accepts an array of expense entries, writes them to the Expenses table,
- * sets the currency picker for each unique currency to trigger _FV recalc,
- * and fills in converted amounts.
+ * Accepts an array of expense entries, fills the ExpensesTable,
+ * and converts amounts using the workbook's _FV exchange rates.
  *
- * Workbook layout assumptions:
- *   - Currency picker: Sheet1!B2
- *   - _FV rate result: Sheet1!C2
- *   - Table "Expenses" with columns: Description | Amount | Currency | ConvertedAmount
+ * For each unique currency, the script updates the currency picker,
+ * forces recalc to refresh _FV rates, then writes converted values.
+ *
+ * Usage from Power Automate:
+ *   Parameters: {
+ *     "expenses": [
+ *       { "description": "Hotel", "amount": 150.00, "currency": "EUR" },
+ *       { "description": "Taxi",  "amount": 45.00,  "currency": "GBP" }
+ *     ],
+ *     "baseCurrency": "USD"
+ *   }
  */
+
+function main(
+  workbook: ExcelScript.Workbook,
+  expenses: ExpenseEntry[],
+  baseCurrency: string = "USD"
+): FillExpensesResult {
+  // --- Configuration ---
+  const SETTINGS_SHEET = "Settings";
+  const CURRENCY_CELL = "B2";
+  const RATE_CELL = "B3";
+  const TABLE_NAME = "ExpensesTable";
+
+  // Expected table columns (0-indexed):
+  // 0: Description, 1: Amount (original), 2: Currency, 3: Converted Amount
+  const COL_DESC = 0;
+  const COL_AMOUNT = 1;
+  const COL_CURRENCY = 2;
+  const COL_CONVERTED = 3;
+
+  if (!expenses || expenses.length === 0) {
+    throw new Error("expenses array is required and must not be empty");
+  }
+
+  const settingsSheet = workbook.getWorksheet(SETTINGS_SHEET);
+  if (!settingsSheet) {
+    throw new Error(`Worksheet "${SETTINGS_SHEET}" not found`);
+  }
+
+  const table = workbook.getTable(TABLE_NAME);
+  if (!table) {
+    throw new Error(`Table "${TABLE_NAME}" not found. Create a table named "${TABLE_NAME}" in your workbook.`);
+  }
+
+  const pickerCell = settingsSheet.getRange(CURRENCY_CELL);
+  const rateCell = settingsSheet.getRange(RATE_CELL);
+
+  // Group expenses by currency to minimize picker changes
+  const byCurrency = new Map<string, { index: number; entry: ExpenseEntry }[]>();
+  expenses.forEach((entry, index) => {
+    const cur = (entry.currency || baseCurrency).toUpperCase();
+    if (!byCurrency.has(cur)) {
+      byCurrency.set(cur, []);
+    }
+    byCurrency.get(cur)!.push({ index, entry });
+  });
+
+  // Prepare results array
+  const summary: RowSummary[] = [];
+  const convertedAmounts = new Array<number>(expenses.length);
+
+  // Process each currency group
+  for (const [currency, items] of byCurrency) {
+    let rate = 1.0;
+
+    if (currency !== baseCurrency) {
+      // Update currency picker to get the rate for this currency
+      pickerCell.setValue(currency);
+      workbook.getApplication().calculate(ExcelScript.CalculationType.fullRebuild);
+
+      rate = rateCell.getValue() as number;
+
+      // Retry once if rate looks invalid
+      if (typeof rate !== "number" || isNaN(rate) || rate <= 0) {
+        workbook.getApplication().calculate(ExcelScript.CalculationType.full);
+        rate = rateCell.getValue() as number;
+      }
+
+      if (typeof rate !== "number" || isNaN(rate) || rate <= 0) {
+        // Skip this group with an error note
+        for (const { index, entry } of items) {
+          convertedAmounts[index] = 0;
+          summary.push({
+            row: index,
+            description: entry.description,
+            originalAmount: entry.amount,
+            currency,
+            convertedAmount: 0,
+            status: `ERROR: Could not get rate for ${currency}`,
+          });
+        }
+        continue;
+      }
+    }
+
+    // Convert and record each expense in this currency group
+    for (const { index, entry } of items) {
+      const converted = currency === baseCurrency
+        ? entry.amount
+        : entry.amount * rate;
+
+      convertedAmounts[index] = Math.round(converted * 100) / 100;
+
+      summary.push({
+        row: index,
+        description: entry.description,
+        originalAmount: entry.amount,
+        currency,
+        convertedAmount: convertedAmounts[index],
+        status: "OK",
+      });
+    }
+  }
+
+  // Write all rows to the table
+  // Clear existing data rows first
+  const existingBody = table.getRangeBetweenHeaderAndTotal();
+  if (existingBody.getRowCount() > 0) {
+    existingBody.clear(ExcelScript.ClearApplyTo.contents);
+  }
+
+  // Resize table if needed — delete excess rows, add missing rows
+  const currentRowCount = table.getRowCount();
+  const neededRows = expenses.length;
+
+  if (currentRowCount > neededRows) {
+    for (let i = currentRowCount - 1; i >= neededRows; i--) {
+      table.deleteRowsAt(i, 1);
+    }
+  } else if (currentRowCount < neededRows) {
+    for (let i = currentRowCount; i < neededRows; i++) {
+      table.addRow(i, ["", 0, "", 0]);
+    }
+  }
+
+  // Fill table rows
+  for (let i = 0; i < expenses.length; i++) {
+    const entry = expenses[i];
+    const currency = (entry.currency || baseCurrency).toUpperCase();
+    const row = table.getRangeBetweenHeaderAndTotal().getRow(i);
+    const values = row.getValues();
+
+    values[0][COL_DESC] = entry.description;
+    values[0][COL_AMOUNT] = entry.amount;
+    values[0][COL_CURRENCY] = currency;
+    values[0][COL_CONVERTED] = convertedAmounts[i];
+
+    row.setValues(values);
+  }
+
+  // Reset picker to base currency
+  pickerCell.setValue(baseCurrency);
+  workbook.getApplication().calculate(ExcelScript.CalculationType.full);
+
+  return {
+    filled: expenses.length,
+    baseCurrency,
+    summary,
+  };
+}
 
 interface ExpenseEntry {
   description: string;
@@ -17,89 +172,17 @@ interface ExpenseEntry {
   currency: string;
 }
 
-interface ExpenseResult {
-  totalRows: number;
-  currencies: string[];
-  entries: {
-    description: string;
-    amount: number;
-    currency: string;
-    rate: number;
-    convertedAmount: number;
-  }[];
+interface RowSummary {
+  row: number;
+  description: string;
+  originalAmount: number;
+  currency: string;
+  convertedAmount: number;
+  status: string;
 }
 
-function main(
-  workbook: ExcelScript.Workbook,
-  targetCurrency: string,
-  expenses: string // JSON string — Power Automate passes complex types as strings
-): ExpenseResult {
-  const entries: ExpenseEntry[] = JSON.parse(expenses);
-  const sheet = workbook.getWorksheet("Sheet1");
-  const pickerCell = sheet.getRange("B2");
-  const rateCell = sheet.getRange("C2");
-  const table = workbook.getTable("Expenses");
-
-  // Group entries by currency to minimize _FV recalculations
-  const byCurrency = new Map<string, { entry: ExpenseEntry; index: number }[]>();
-  entries.forEach((e, i) => {
-    const key = e.currency.toUpperCase();
-    if (!byCurrency.has(key)) byCurrency.set(key, []);
-    byCurrency.get(key)!.push({ entry: e, index: i });
-  });
-
-  // Pre-allocate results
-  const results: ExpenseResult["entries"] = new Array(entries.length);
-
-  // Process each currency group
-  for (const [currency, items] of byCurrency) {
-    // Set picker and recalc
-    pickerCell.setValue(`${currency}/${targetCurrency}`);
-    workbook.getApplication().calculate(ExcelScript.CalculationType.fullRebuild);
-    const rate = waitForRate(rateCell, 10, 500);
-
-    for (const { entry, index } of items) {
-      const converted = Math.round(entry.amount * rate * 100) / 100;
-      results[index] = {
-        description: entry.description,
-        amount: entry.amount,
-        currency: entry.currency,
-        rate,
-        convertedAmount: converted,
-      };
-    }
-  }
-
-  // Write all rows to the Expenses table
-  for (const r of results) {
-    table.addRow(-1, [r.description, r.amount, r.currency, r.convertedAmount]);
-  }
-
-  return {
-    totalRows: results.length,
-    currencies: [...byCurrency.keys()],
-    entries: results,
-  };
-}
-
-function waitForRate(
-  cell: ExcelScript.Range,
-  maxAttempts: number,
-  delayMs: number
-): number {
-  for (let i = 0; i < maxAttempts; i++) {
-    const val = cell.getValue();
-    if (typeof val === "number" && val > 0) return val;
-
-    const start = Date.now();
-    while (Date.now() - start < delayMs) {
-      cell.getAddress();
-    }
-    cell.getWorksheet().getWorkbook().getApplication().calculate(
-      ExcelScript.CalculationType.full
-    );
-  }
-  const finalVal = cell.getValue();
-  if (typeof finalVal === "number") return finalVal;
-  throw new Error(`Rate cell did not resolve. Last value: ${finalVal}`);
+interface FillExpensesResult {
+  filled: number;
+  baseCurrency: string;
+  summary: RowSummary[];
 }
